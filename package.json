@@ -1,0 +1,71 @@
+{
+  "name": "@12signals/html-distill",
+  "version": "0.1.0",
+  "description": "Structure-preserving HTML normalizer for LLM input. Turns real-world marketing pages, landing pages and SPA output into stable, semantically-hinted HTML — without throwing away the boilerplate that carries the signal.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "main": "./src/index.js",
+  "types": "./types/index.d.ts",
+  "files": [
+    "src",
+    "types",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build:types": "tsc -p tsconfig.json",
+    "lint": "eslint src test",
+    "prepublishOnly": "npm run test && npm run build:types"
+  },
+  "keywords": [
+    "html",
+    "html-cleaner",
+    "clean-html",
+    "llm",
+    "ai",
+    "prompt",
+    "web-scraping",
+    "scraping",
+    "content-extraction",
+    "readability",
+    "sanitize",
+    "rehype",
+    "unified",
+    "landing-page",
+    "markdown",
+    "preprocessing"
+  ],
+  "author": "12signals",
+  "license": "MIT",
+  "homepage": "https://github.com/12signals/html-distill#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/12signals/html-distill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/12signals/html-distill/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "hast-util-sanitize": "^5.0.1",
+    "rehype-format": "^5.0.0",
+    "rehype-parse": "^9.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "rehype-stringify": "^10.0.0",
+    "unified": "^11.0.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
