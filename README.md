@@ -13,6 +13,9 @@ strips the noise instead: cookie banners, hidden nodes, framework cruft and
 tracking params go, and a few semantic hints go in so an LLM can tell a headline
 from a button.
 
+Built at [12signals](https://12signals.com), where it cleans thousands of
+competitor homepages, career pages and product pages for LLM analysis every day.
+
 ```bash
 npm install @12signals/html-distill
 ```
