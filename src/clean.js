@@ -28,6 +28,7 @@ import {
  * @property {import('./policy.js').DistillPolicy} [policy] - Class-filtering + hero-detection policy. Defaults to `defaultPolicy`.
  * @property {string[]} [linkParams] - Query params kept on `<a href>`. Defaults to `defaultLinkParams`.
  * @property {Object} [schema] - rehype-sanitize schema. Defaults to the built-in content schema.
+ * @property {boolean} [removeHeadArtifacts=true] - Drop document-head elements (title/meta/link) that fragment-parsing leaves floating in the body, so a leaked `<title>` never surfaces as body text. Set `false` to keep them.
  */
 
 /**
@@ -54,12 +55,13 @@ export async function cleanHtml(inputHtml, options = {}) {
   const policy = options.policy || defaultPolicy;
   const linkParams = options.linkParams || defaultLinkParams;
   const schema = options.schema || buildSanitizeSchema();
+  const removeHeadArtifacts = options.removeHeadArtifacts !== false; // default on
 
   const meta = extractMetadata(inputHtml || '');
 
-  const file = await unified()
-    .use(rehypeParse, { fragment: true })
-    .use(removeDocumentHeadArtifacts())
+  const processor = unified().use(rehypeParse, { fragment: true });
+  if (removeHeadArtifacts) processor.use(removeDocumentHeadArtifacts());
+  processor
     .use(removeHiddenNodes())
     .use(removeCookieConsentBanners())
     .use(removeSerializedStrippedTags(schema.strip))
@@ -75,8 +77,9 @@ export async function cleanHtml(inputHtml, options = {}) {
     .use(unwrapRedundantDivs())
     .use(demoteKickerHeadings())
     .use(rehypeFormat)
-    .use(rehypeStringify, { allowParseErrors: true, closeSelfClosing: true })
-    .process(inputHtml ?? '');
+    .use(rehypeStringify, { allowParseErrors: true, closeSelfClosing: true });
+
+  const file = await processor.process(inputHtml ?? '');
 
   // Collapse excessive blank lines (3+ -> single blank line)
   return String(file).replace(/\n{3,}/g, '\n\n').trim();

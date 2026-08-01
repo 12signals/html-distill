@@ -315,6 +315,13 @@ describe('cleanHtml', () => {
       expect(body).not.toContain('Acme Pumps');
       expect(cleaned).toContain('Water, moved.');
     });
+
+    it('keeps the leaked title in the body when removeHeadArtifacts is false', async () => {
+      const html = `<html><head><title>Acme Pumps</title></head><body><main><h1>Water, moved.</h1></main></body></html>`;
+      const cleaned = await cleanHtml(html, { removeHeadArtifacts: false });
+      const body = cleaned.slice(cleaned.indexOf('<body'));
+      expect(body).toContain('Acme Pumps');
+    });
   });
 
   describe('link tracking-param stripping', () => {

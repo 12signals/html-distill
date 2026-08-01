@@ -64,6 +64,7 @@ const clean = await cleanHtml(rawHtml);
 |--------|------|---------|--|
 | `policy` | `object` | `defaultPolicy` | Which classes to keep and how hero/kicker hints are detected. |
 | `linkParams` | `string[]` | `defaultLinkParams` | Query params kept on `<a href>`. |
+| `removeHeadArtifacts` | `boolean` | `true` | Drop document-head elements (`title`/`meta`) that fragment-parsing leaves in the body. |
 | `schema` | `object` | built-in | rehype-sanitize schema (advanced). |
 
 ```js
