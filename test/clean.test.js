@@ -320,6 +320,41 @@ describe('cleanHtml', () => {
       expect(body).toContain('Kept');
     });
 
+    it('keeps an app root whose ::before scrim is opacity-0', async () => {
+      // `before:opacity-0` styles the overlay pseudo-element, not the element
+      // itself. Substring-matching it deleted the whole app root (staffbase.com,
+      // 2026-08-08).
+      const html = `<html><body>
+        <div class="app flex flex-col min-h-screen relative before:absolute before:inset-0 before:opacity-0">
+          <main><h1>Finally, one platform to reach every employee.</h1></main>
+        </div>
+      </body></html>`;
+      const cleaned = await cleanHtml(html);
+      expect(cleaned).toContain('Finally, one platform to reach every employee.');
+    });
+
+    it('keeps an element that only turns transparent on hover', async () => {
+      const html = '<html><body><main class="hover:opacity-0"><p>Kept</p></main></body></html>';
+      const cleaned = await cleanHtml(html);
+      expect(cleaned).toContain('Kept');
+    });
+
+    it('still removes a bare opacity-0 element', async () => {
+      const html = '<html><body><main><div class="opacity-0">Gone</div><p>Kept</p></main></body></html>';
+      const cleaned = await cleanHtml(html);
+      const body = cleaned.slice(cleaned.indexOf('<body'));
+      expect(body).not.toContain('Gone');
+      expect(body).toContain('Kept');
+    });
+
+    it('still removes a breakpoint-scoped opacity-0 element', async () => {
+      const html = '<html><body><main><div class="lg:opacity-0">Gone</div><p>Kept</p></main></body></html>';
+      const cleaned = await cleanHtml(html);
+      const body = cleaned.slice(cleaned.indexOf('<body'));
+      expect(body).not.toContain('Gone');
+      expect(body).toContain('Kept');
+    });
+
     it('still removes hidden utility classes', async () => {
       const html = '<html><body><main><p class="d-none">Gone</p><p>Kept</p></main></body></html>';
       const cleaned = await cleanHtml(html);

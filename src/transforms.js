@@ -28,6 +28,24 @@ function toClassList(props) {
   return [];
 }
 
+const BREAKPOINT_VARIANT = /^(?:max-)?(?:sm|md|lg|xl|2xl)$/;
+
+/**
+ * True when `token` is the given Tailwind utility applied to the element's own
+ * resting state — bare, or behind breakpoint variants only. Pseudo-element and
+ * interaction variants (`before:`, `after:`, `hover:`, `group-hover:`, ...)
+ * return false: they describe a different box or a different moment.
+ *
+ * @param {string} token - single lowercased class token
+ * @param {string} utility - the utility to match, e.g. 'opacity-0'
+ * @returns {boolean}
+ */
+function isOwnStateUtility(token, utility) {
+  const parts = token.split(':');
+  if (parts.pop() !== utility) return false;
+  return parts.every((variant) => BREAKPOINT_VARIANT.test(variant));
+}
+
 /**
  * Remove nodes that are visually hidden: the `hidden` attribute, presentation
  * clones, and hidden utility classes (`hidden`, `invisible`, `opacity-0`,
@@ -56,7 +74,12 @@ export function removeHiddenNodes() {
         if (!token || /sr-only|visually-hidden/.test(token)) return false;
         if (token === 'hidden' || token === 'invisible') return true;
         if (token.includes(':hidden')) return true; // tailwind utilities like lg:hidden
-        if (token.includes('opacity-0') && !hasAnimateClass) return true;
+        // `opacity-0` only means invisible when it applies to the element itself.
+        // `before:opacity-0` styles a ::before overlay, `hover:opacity-0` applies
+        // on interaction — neither says anything about the element's resting
+        // state. Matching them by substring deleted whole app roots that merely
+        // carried a scrim (staffbase.com, 2026-08-08).
+        if (isOwnStateUtility(token, 'opacity-0') && !hasAnimateClass) return true;
         if (token.includes('display-none')) return true;
         if (token.includes('d-none')) return true;
         return false;
