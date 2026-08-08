@@ -29,9 +29,9 @@ function toClassList(props) {
 }
 
 /**
- * Remove nodes that are visually hidden: `hidden`/`inert`/`aria-hidden`,
- * presentation clones, and hidden utility classes (`hidden`, `invisible`,
- * `opacity-0`, `d-none`, ...). Screen-reader-only content and
+ * Remove nodes that are visually hidden: the `hidden` attribute, presentation
+ * clones, and hidden utility classes (`hidden`, `invisible`, `opacity-0`,
+ * `d-none`, ...). Screen-reader-only content, `inert` subtrees and
  * responsively-shown / animated nodes are deliberately kept.
  *
  * Run BEFORE sanitize (needs the original class names).
@@ -62,11 +62,19 @@ export function removeHiddenNodes() {
         return false;
       });
 
+      // Dead branch: hast normalizes the attribute to `ariaHidden`, so this
+      // lookup never resolves. Left inactive on purpose — enabling it would
+      // newly delete every aria-hidden subtree, including the modal backdrops
+      // that the `inert` case above showed to be visible content.
       const ariaHiddenRaw = props['aria-hidden'];
       const ariaHidden = typeof ariaHiddenRaw === 'string'
         ? ariaHiddenRaw.toLowerCase() === 'true'
         : ariaHiddenRaw === true;
-      const hasBooleanHidden = 'hidden' in props || 'inert' in props;
+      // `inert` is NOT hidden: it marks a subtree non-interactive while a modal
+      // is open. The content stays fully visible, so treating it as hidden
+      // deletes the entire page behind any consent/login dialog and leaves only
+      // the dialog itself.
+      const hasBooleanHidden = 'hidden' in props;
       const role = typeof props.role === 'string' ? props.role.toLowerCase() : '';
       const tabIndexRaw = props.tabindex ?? props.tabIndex;
       const tabIndex = typeof tabIndexRaw === 'string' ? tabIndexRaw.trim() : tabIndexRaw;

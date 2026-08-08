@@ -297,6 +297,38 @@ describe('cleanHtml', () => {
     });
   });
 
+  describe('hidden-node removal', () => {
+    it('keeps content behind an inert modal backdrop', async () => {
+      // Consent/login modals mark the rest of the page `inert` for a11y. The
+      // content stays visible, so treating inert as hidden wipes the whole page
+      // and leaves only the dialog (candis.io, 2026-08-08).
+      const html = `<html><body>
+        <div class="header" inert=""><nav><a href="/pricing">Pricing</a></nav></div>
+        <main inert=""><h1>Volle Kontrolle über dein Rechnungsmanagement</h1></main>
+        <div role="dialog"><h3>Privacy settings</h3></div>
+      </body></html>`;
+      const cleaned = await cleanHtml(html);
+      expect(cleaned).toContain('Volle Kontrolle über dein Rechnungsmanagement');
+      expect(cleaned).toContain('Pricing');
+    });
+
+    it('still removes the hidden attribute', async () => {
+      const html = '<html><body><main><p hidden>Gone</p><p>Kept</p></main></body></html>';
+      const cleaned = await cleanHtml(html);
+      const body = cleaned.slice(cleaned.indexOf('<body'));
+      expect(body).not.toContain('Gone');
+      expect(body).toContain('Kept');
+    });
+
+    it('still removes hidden utility classes', async () => {
+      const html = '<html><body><main><p class="d-none">Gone</p><p>Kept</p></main></body></html>';
+      const cleaned = await cleanHtml(html);
+      const body = cleaned.slice(cleaned.indexOf('<body'));
+      expect(body).not.toContain('Gone');
+      expect(body).toContain('Kept');
+    });
+  });
+
   describe('document assembly + metadata', () => {
     it('extracts <title> and meta description into a clean head', async () => {
       const html = `<html><head>
