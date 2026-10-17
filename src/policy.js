@@ -4,7 +4,8 @@ import { defaultSchema } from 'hast-util-sanitize';
  * @typedef {Object} DistillPolicy
  * @property {string[]} allowedClassNames - Exact class names to keep (case-insensitive).
  * @property {RegExp[]} heroFontSizePatterns - Class patterns for visually large text; matches are rewritten to `hero`.
- * @property {{attr: string, pattern: RegExp}[]} heroDataAttributePatterns - data-* attribute patterns that mark a node as `hero` (checked pre-sanitize).
+ * @property {{attr: string, pattern: RegExp}[]} heroDataAttributePatterns - data-* attribute patterns that mark a node as `hero` (checked pre-sanitize). `attr: '*'` tests every data-* attribute.
+ * @property {RegExp[]} kickerClassPatterns - Class patterns for eyebrow/kicker labels; matches are rewritten to `kicker` and their headings demoted to `<div class="kicker">`.
  * @property {number} heroInlineFontSizeMin - Inline font-size (px) at/above which a node is marked `hero`.
  * @property {string[]} allowedClassPrefixes - Class prefixes to keep (e.g. `hero-`, `cta-`).
  * @property {boolean} expandHyphenVariants - When true, keep `hero-*` variants of allowlisted base names.
@@ -64,6 +65,17 @@ export const defaultPolicy = {
   // as "hero"; checked against lowercased attribute values.
   heroDataAttributePatterns: [
     { attr: 'dataFramerName', pattern: /hero/i }, // Framer: data-framer-name="HERO TEXT"
+    { attr: 'dataTestid', pattern: /hero/i },     // data-testid="hero-banner" (Autodesk, MUI apps)
+    { attr: '*', pattern: /hero/i },              // any other data-* attribute (wildcard)
+  ],
+
+  // Class patterns indicating an eyebrow/kicker line (small ALL-CAPS label
+  // above the real headline). Matched classes are rewritten to `kicker`, and
+  // headings carrying them are demoted to <div class="kicker"> so they never
+  // surface as h1.
+  kickerClassPatterns: [
+    /eyebrow/, // MUI: MuiTypography-eyebrow-large
+    /kicker/,
   ],
 
   // Inline font-size threshold (px). Elements whose CSS style contains

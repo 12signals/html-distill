@@ -281,8 +281,19 @@ export function detectHeroFromAttributesAndStyles(policy = defaultPolicy) {
         let isHero = false;
 
         for (const { attr, pattern } of dataPatterns) {
-          const val = props[attr];
-          if (typeof val === 'string' && pattern.test(val)) { isHero = true; break; }
+          if (attr === '*') {
+            // Wildcard: test every data-* attribute value.
+            for (const [key, val] of Object.entries(props)) {
+              if (/^data[A-Z0-9]/.test(key) && typeof val === 'string' && pattern.test(val)) {
+                isHero = true;
+                break;
+              }
+            }
+          } else {
+            const val = props[attr];
+            if (typeof val === 'string' && pattern.test(val)) { isHero = true; break; }
+          }
+          if (isHero) break;
         }
 
         if (!isHero && minFontSize > 0) {
@@ -413,6 +424,7 @@ export function filterClassNames(policy = defaultPolicy) {
       .map((s) => (s || '').trim().toLowerCase()).filter(Boolean);
     const expandHyphen = !!policy.expandHyphenVariants;
     const heroPatterns = policy.heroFontSizePatterns || [];
+    const kickerPatterns = policy.kickerClassPatterns || [];
 
     const visit = (node, inherited = new Set()) => {
       if (!node) return;
@@ -430,6 +442,7 @@ export function filterClassNames(policy = defaultPolicy) {
               const lower = c.toLowerCase();
 
               if (heroPatterns.some((re) => re.test(lower))) { kept.add('hero'); continue; }
+              if (kickerPatterns.some((re) => re.test(lower))) { kept.add('kicker'); continue; }
 
               const matchedTokens = new Set();
               if (allowedNames.has(lower)) matchedTokens.add(lower);
@@ -606,10 +619,18 @@ export function unwrapRedundantDivs() {
 }
 
 /**
- * Demote an ALL-CAPS `<h1>` to `<div class="kicker">` when it is immediately
- * followed by an `<h2 class="hero">` (category label above the real claim).
+ * Demote kicker headings to `<div class="kicker">` so eyebrow labels never
+ * surface as h1:
  *
- * Run AFTER `unwrapRedundantDivs` so the headings are siblings.
+ * 1. any heading (h1-h6) that carries the `kicker` class (from
+ *    `kickerClassPatterns`, e.g. MUI eyebrow typography) is demoted;
+ * 2. an ALL-CAPS `<h1>` followed by an `<h2 class="hero">` is demoted
+ *    (category label above the real claim);
+ * 3. fallback when hero markers are missing: an ALL-CAPS `<h1>` followed by
+ *    any heading whose text is longer (the real claim is a sentence, the
+ *    eyebrow is a short label) is demoted.
+ *
+ * Run AFTER `filterClassNames` and `unwrapRedundantDivs`.
  * @returns {() => (tree: any) => void}
  */
 export function demoteKickerHeadings() {
@@ -623,15 +644,35 @@ export function demoteKickerHeadings() {
   return () => (tree) => {
     const visit = (node) => {
       const children = node.children || [];
-      for (let i = 0; i < children.length - 1; i++) {
+      for (let i = 0; i < children.length; i++) {
         const cur = children[i];
-        if (cur.type !== 'element' || cur.tagName !== 'h1') continue;
+        if (cur.type !== 'element' || !HEADING_TAGS.has(cur.tagName)) continue;
+
+        // 1. Kicker class always demotes, regardless of case or context.
+        if (hasClass(cur, 'kicker')) {
+          cur.tagName = 'div';
+          cur.properties = { className: ['kicker'] };
+          continue;
+        }
+        if (cur.tagName !== 'h1' || !isAllCaps(textContent(cur))) continue;
+
         let next = null;
         for (let j = i + 1; j < children.length; j++) {
           if (children[j].type === 'element') { next = children[j]; break; }
           if (children[j].type === 'text' && children[j].value?.trim()) break;
         }
-        if (next && next.tagName === 'h2' && hasClass(next, 'hero') && isAllCaps(textContent(cur))) {
+        if (!next || !HEADING_TAGS.has(next.tagName) || hasClass(next, 'kicker')) continue;
+
+        // 2. Explicit hero marker on the following h2.
+        if (next.tagName === 'h2' && hasClass(next, 'hero')) {
+          cur.tagName = 'div';
+          cur.properties = { className: ['kicker'] };
+          continue;
+        }
+
+        // 3. Fallback without hero markers: the next heading reads like the
+        // real claim (longer text than the ALL-CAPS label).
+        if (textContent(next).trim().length > textContent(cur).trim().length) {
           cur.tagName = 'div';
           cur.properties = { className: ['kicker'] };
         }
