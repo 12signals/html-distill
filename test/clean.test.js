@@ -400,6 +400,50 @@ describe('cleanHtml', () => {
     });
   });
 
+  describe('eyebrow/kicker class demotion (Autodesk, MUI)', () => {
+    it('demotes MUI eyebrow h1 to div.kicker and marks the real h2 as hero (2026-10-13 snapshot)', async () => {
+      const html = [
+        '<main><div>',
+        '<h1 class="MuiTypography-root MuiTypography-eyebrow-large css-1xy2z3">Autodesk Fusion</h1>',
+        '<h2 data-testid="hero-banner" class="MuiTypography-root MuiTypography-h2Large">What are Design and Make leaders doing differently?</h2>',
+        '</div></main>',
+      ].join('');
+      const cleaned = await cleanHtml(html);
+      expect(cleaned).toContain('class="kicker"');
+      expect(cleaned).not.toContain('<h1');
+      expect(cleaned).toContain('<h2 class="hero"');
+      expect(cleaned).toContain('What are Design and Make leaders doing differently?');
+    });
+
+    it('demotes the report eyebrow h1 via ALL-CAPS fallback even without hero markers (2026-10-09 snapshot)', async () => {
+      const html = '<main><h1>AUTODESK 2027 STATE OF DESIGN &amp; MAKE REPORT</h1><h2>What are Design and Make leaders doing differently?</h2></main>';
+      const cleaned = await cleanHtml(html);
+      expect(cleaned).toContain('class="kicker"');
+      expect(cleaned).not.toContain('<h1');
+      expect(cleaned).toContain('<h2');
+    });
+
+    it('demotes any heading with a kicker class, regardless of case', async () => {
+      const html = '<main><h3 class="kicker-label">Up next</h3><h2 class="hero">The real claim</h2></main>';
+      const cleaned = await cleanHtml(html);
+      expect(cleaned).toContain('class="kicker"');
+      expect(cleaned).not.toContain('<h3');
+    });
+
+    it('recognizes hero via wildcard data-* attributes', async () => {
+      const html = '<main><h2 data-component="hero-headline">Design it once</h2></main>';
+      const cleaned = await cleanHtml(html);
+      expect(cleaned).toContain('class="hero"');
+    });
+
+    it('fallback does not demote an ALL-CAPS h1 when the next heading is not longer', async () => {
+      const html = '<main><h1>ALL CAPS TITLE</h1><h2>Some subtitle</h2></main>';
+      const cleaned = await cleanHtml(html);
+      expect(cleaned).toContain('<h1>');
+      expect(cleaned).not.toContain('kicker');
+    });
+  });
+
   describe('options', () => {
     it('honors a custom linkParams allowlist', async () => {
       const html = '<main><a href="https://acme.com/x?ref=abc&page=2">Link</a></main>';
