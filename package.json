@@ -1,6 +1,6 @@
 {
   "name": "@12signals/html-distill",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Structure-preserving HTML normalizer for LLM input. Turns real-world marketing pages, landing pages and SPA output into stable, semantically-hinted HTML — without throwing away the boilerplate that carries the signal.",
   "type": "module",
   "exports": {
